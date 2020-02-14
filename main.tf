@@ -1,5 +1,5 @@
 provider "aws" { 
-  profile = "ec-infra"
+  profile = "default"
   region  = "us-east-2"
   assume_role { 
     role_arn     = var.admin_iam_roles
@@ -9,7 +9,8 @@ provider "aws" {
 }
 
 resource "aws_s3_bucket" "terraform_state" {
-    bucket = "terraform-rfishback-test2"
+    #Enter a unique bucket name below
+    bucket = "change me"
     # Enable versioning so we can see the full revision history of our
     # state files
     versioning {
@@ -26,7 +27,7 @@ resource "aws_s3_bucket" "terraform_state" {
   }
 
   resource "aws_dynamodb_table" "terraform_locks" {
-  name         = "terraform-up-and-running-locks2"
+  name         = "terraform-up-and-running-locks"
   billing_mode = "PAY_PER_REQUEST"
   hash_key     = "LockID"
   attribute {
