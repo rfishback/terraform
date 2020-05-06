@@ -1,0 +1,146 @@
+resource "aws_vpc" "main" {
+  cidr_block        = var.vpc_cidrblock
+  instance_tenancy  = "default"
+  enable_dns_support = "true"
+  enable_dns_hostnames = "true"
+  tags = {
+    Name = var.vpc_tag_name
+    Environment = var.vpc_tag_environment
+    Type = var.vpc_tag_type
+  }
+}
+
+resource "aws_eip" "ngw_ip_a" {
+  vpc = true
+}
+
+resource "aws_eip" "ngw_ip_b" {
+  vpc = true
+}
+
+resource "aws_internet_gateway" "igw" {
+  vpc_id = aws_vpc.main.id
+
+  tags = {
+    Name = "main internet gateway"
+  }
+}
+
+resource "aws_nat_gateway" "ngw_a" {
+  allocation_id = aws_eip.ngw_ip_a.id
+  subnet_id = aws_subnet.vpc_subnet_pub_1a.id
+  tags = {
+    Name = "Nat Gateway A"
+  }
+
+}
+
+resource "aws_nat_gateway" "ngw_b" {
+  allocation_id = aws_eip.ngw_ip_b.id
+  subnet_id = aws_subnet.vpc_subnet_pub_1b.id
+  tags = {
+    Name = "Nat Gateway B"
+  }
+
+}
+resource "aws_route_table" "pub-route-table" {
+  vpc_id = aws_vpc.main.id
+  tags = {
+    Name = "Public Route Table"
+  }
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.igw.id
+  }
+}
+
+resource "aws_route_table_association" "pub-route-table-subnet-a" {
+  subnet_id      = aws_subnet.vpc_subnet_pub_1a.id
+  route_table_id = aws_route_table.pub-route-table.id
+}
+
+resource "aws_route_table_association" "pub-route-table-subnet-b" {
+  subnet_id      = aws_subnet.vpc_subnet_pub_1b.id
+  route_table_id = aws_route_table.pub-route-table.id
+}
+
+
+resource "aws_route_table" "priv-a-route-table" {
+  vpc_id = aws_vpc.main.id
+  tags = {
+    Name = "Private A Route Table"
+  }
+  route {
+    cidr_block = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.ngw_a.id
+  }
+}
+
+resource "aws_route_table_association" "priv-route-table-subnets-a" {
+  subnet_id      = aws_subnet.vpc_subnet_priv_1a.id
+  route_table_id = aws_route_table.priv-a-route-table.id
+}
+
+resource "aws_route_table" "priv-b-route-table" {
+  vpc_id = aws_vpc.main.id
+  tags = {
+    Name = "Private B Route Table"
+  }
+  route {
+    cidr_block = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.ngw_b.id
+  }
+}
+
+resource "aws_route_table_association" "priv-route-table-subnets-b" {
+  subnet_id      = aws_subnet.vpc_subnet_priv_1b.id
+  route_table_id = aws_route_table.priv-b-route-table.id
+}
+
+###Subnets for us-east-1a###
+resource "aws_subnet" "vpc_subnet_pub_1a" {
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = var.subnet_pub_1a_cidr
+  map_public_ip_on_launch = "true"
+  availability_zone       = "us-east-1a"
+  tags = {
+   Name = "Public Subnet 1a"
+   Environment = var.vpc_tag_environment
+   Type = var.vpc_tag_type
+  }
+}
+
+resource "aws_subnet" "vpc_subnet_priv_1a" {
+  vpc_id                 = aws_vpc.main.id
+  cidr_block             = var.subnet_priv_1a_cidr
+  availability_zone      = "us-east-1a"
+  tags = {
+     Name = "Private Subnet 1a"
+     Environment = var.vpc_tag_environment
+     Type = var.vpc_tag_type
+  }
+}
+
+###Subnets for us-east-1b###
+resource "aws_subnet" "vpc_subnet_pub_1b" {
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = var.subnet_pub_1b_cidr
+  availability_zone       = "us-east-1b"
+  tags = {
+    Name = "Public Subnet 1b"
+    Environment = var.vpc_tag_environment
+    Type = var.vpc_tag_type
+  }
+}
+
+resource "aws_subnet" "vpc_subnet_priv_1b" {
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = var.subnet_priv_1b_cidr
+  availability_zone       = "us-east-1b"
+  tags = {
+    Name = "Private Subnet 1b"
+    Environment = var.vpc_tag_environment
+    Type = var.vpc_tag_type
+  }
+}
